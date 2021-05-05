@@ -23,10 +23,18 @@ class AllTickers:  # pylint: disable=too-few-public-methods
 
 class BinanceAPIManager:
     def __init__(self, config: Config, db: Database, logger: Logger):
+        requests_params = {
+            # 'proxies': {
+            #     'http': 'socks5h://localhost:1081',
+            #     'https': 'socks5h://localhost:1081'
+            # },
+            'timeout': 10,
+        }
         self.binance_client = Client(
             config.BINANCE_API_KEY,
             config.BINANCE_API_SECRET_KEY,
             tld=config.BINANCE_TLD,
+            requests_params=requests_params
         )
         self.db = db
         self.logger = logger
