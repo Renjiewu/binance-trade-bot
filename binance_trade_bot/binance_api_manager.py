@@ -1,6 +1,7 @@
 import math
 import time
 from typing import Dict, List
+from requests.exceptions import ConnectTimeout
 
 from binance.client import Client
 from binance.exceptions import BinanceAPIException
@@ -28,7 +29,7 @@ class BinanceAPIManager:
             #     'http': 'socks5h://localhost:1081',
             #     'https': 'socks5h://localhost:1081'
             # },
-            'timeout': 10,
+            'timeout': 2,
         }
         self.binance_client = Client(
             config.BINANCE_API_KEY,
@@ -75,7 +76,14 @@ class BinanceAPIManager:
         """
         Get ticker price of all coins
         """
-        return AllTickers(self.binance_client.get_all_tickers())
+
+        try:
+            self.logger.info('Get all coins price')
+            tmp = self.binance_client.get_all_tickers()
+        except ConnectTimeout:
+            raise('timeout')
+
+        return AllTickers(tmp)
 
     def get_market_ticker_price(self, ticker_symbol: str):
         """
