@@ -233,7 +233,7 @@ class BinanceAPIManager:
 
         origin_balance = self.get_currency_balance(origin_symbol)
         target_balance = self.get_currency_balance(target_symbol)
-        from_coin_price = all_tickers.get_price(origin_symbol + target_symbol)
+        from_coin_price = all_tickers.get_price(origin_symbol + target_symbol) * 1.001
 
         order_quantity = self._buy_quantity(origin_symbol, target_symbol, target_balance, from_coin_price)
         self.logger.info(f"BUY QTY {order_quantity}")
@@ -285,7 +285,7 @@ class BinanceAPIManager:
 
         origin_balance = self.get_currency_balance(origin_symbol)
         target_balance = self.get_currency_balance(target_symbol)
-        from_coin_price = all_tickers.get_price(origin_symbol + target_symbol)
+        from_coin_price = all_tickers.get_price(origin_symbol + target_symbol) * 0.999
 
         order_quantity = self._sell_quantity(origin_symbol, target_symbol, origin_balance)
         self.logger.info(f"Selling {order_quantity} of {origin_symbol}")
