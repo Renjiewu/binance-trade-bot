@@ -30,7 +30,7 @@ class BinanceAPIManager:
             #     'http': 'socks5h://localhost:1081',
             #     'https': 'socks5h://localhost:1081'
             # },
-            'timeout': 2,
+            'timeout': 5,
         }
         self.binance_client = Client(
             config.BINANCE_API_KEY,
