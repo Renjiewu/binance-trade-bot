@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM python:3.8 as builder
+FROM --platform=linux/amd64 python:3.8 as builder
 
 WORKDIR /install
 
