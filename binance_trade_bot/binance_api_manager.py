@@ -79,7 +79,7 @@ class BinanceAPIManager:
         """
 
         try:
-            self.logger.info('Get all coins price')
+            # self.logger.info('Get all coins price')
             tmp = self.binance_client.get_all_tickers()
         except ConnectTimeout:
             raise('timeout')
