@@ -3,6 +3,8 @@ version: "3"
 services:
   crypto-trading:
     image: binance_bot
+    extra_hosts:
+      - "api.binance.com:52.84.150.34"
     container_name: binance_trader
     working_dir: /app
     volumes:
