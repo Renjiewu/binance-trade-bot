@@ -1,5 +1,6 @@
 import math
 import time
+from decimal import Decimal
 from typing import Dict, List
 from requests.exceptions import ConnectTimeout
 
@@ -233,7 +234,7 @@ class BinanceAPIManager:
 
         origin_balance = self.get_currency_balance(origin_symbol)
         target_balance = self.get_currency_balance(target_symbol)
-        from_coin_price = all_tickers.get_price(origin_symbol + target_symbol) * 1.001
+        from_coin_price = self.get_round(all_tickers.get_price(origin_symbol + target_symbol), 1.002)
         print(from_coin_price)
 
 
@@ -287,7 +288,7 @@ class BinanceAPIManager:
 
         origin_balance = self.get_currency_balance(origin_symbol)
         target_balance = self.get_currency_balance(target_symbol)
-        from_coin_price = all_tickers.get_price(origin_symbol + target_symbol) * 0.99
+        from_coin_price = self.get_round(all_tickers.get_price(origin_symbol + target_symbol), 0.999)
         print(from_coin_price)
 
         order_quantity = self._sell_quantity(origin_symbol, target_symbol, origin_balance)
@@ -323,3 +324,7 @@ class BinanceAPIManager:
         trade_log.set_complete(stat["cummulativeQuoteQty"])
 
         return order
+
+    def get_round(self, num, t):
+        tmp = str(num)
+        return float(Decimal(num * t).quantize(Decimal(tmp)))
