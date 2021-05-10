@@ -50,28 +50,31 @@ class BinanceAPIManager:
     def get_using_bnb_for_fees(self):
         return self.binance_client.get_bnb_burn_spot_margin()["spotBNBBurn"]
 
+    # def get_fee(self, origin_coin: Coin, target_coin: Coin, selling: bool):
+    #     base_fee = self.get_trade_fees()[origin_coin + target_coin]
+    #     if not self.get_using_bnb_for_fees():
+    #         return base_fee
+    #     # The discount is only applied if we have enough BNB to cover the fee
+    #     amount_trading = (
+    #         self._sell_quantity(origin_coin.symbol, target_coin.symbol)
+    #         if selling
+    #         else self._buy_quantity(origin_coin.symbol, target_coin.symbol)
+    #     )
+    #     fee_amount = amount_trading * base_fee * 0.75
+    #     if origin_coin.symbol == "BNB":
+    #         fee_amount_bnb = fee_amount
+    #     else:
+    #         origin_price = self.get_market_ticker_price(origin_coin + Coin("BNB"))
+    #         if origin_price is None:
+    #             return base_fee
+    #         fee_amount_bnb = fee_amount * origin_price
+    #     bnb_balance = self.get_currency_balance("BNB")
+    #     if bnb_balance >= fee_amount_bnb:
+    #         return base_fee * 0.75
+    #     return base_fee
+
     def get_fee(self, origin_coin: Coin, target_coin: Coin, selling: bool):
-        base_fee = self.get_trade_fees()[origin_coin + target_coin]
-        if not self.get_using_bnb_for_fees():
-            return base_fee
-        # The discount is only applied if we have enough BNB to cover the fee
-        amount_trading = (
-            self._sell_quantity(origin_coin.symbol, target_coin.symbol)
-            if selling
-            else self._buy_quantity(origin_coin.symbol, target_coin.symbol)
-        )
-        fee_amount = amount_trading * base_fee * 0.75
-        if origin_coin.symbol == "BNB":
-            fee_amount_bnb = fee_amount
-        else:
-            origin_price = self.get_market_ticker_price(origin_coin + Coin("BNB"))
-            if origin_price is None:
-                return base_fee
-            fee_amount_bnb = fee_amount * origin_price
-        bnb_balance = self.get_currency_balance("BNB")
-        if bnb_balance >= fee_amount_bnb:
-            return base_fee * 0.75
-        return base_fee
+        return 0.0075
 
     def get_all_market_tickers(self) -> AllTickers:
         """
