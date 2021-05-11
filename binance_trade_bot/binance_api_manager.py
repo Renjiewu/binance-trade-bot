@@ -332,4 +332,5 @@ class BinanceAPIManager:
     def get_round(self, num, t):
         tmp = str(num)
         s = float(Decimal(num * t).quantize(Decimal(tmp)))
+        print(s)
         return round(s, 20)
