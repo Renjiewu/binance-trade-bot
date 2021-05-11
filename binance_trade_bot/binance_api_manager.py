@@ -2,6 +2,7 @@ import math
 import time
 from decimal import Decimal
 from typing import Dict, List
+import re
 from requests.exceptions import ConnectTimeout
 
 from binance.client import Client
@@ -330,4 +331,5 @@ class BinanceAPIManager:
 
     def get_round(self, num, t):
         tmp = str(num)
-        return float(Decimal(num * t).quantize(Decimal(tmp)))
+        s = float(Decimal(num * t).quantize(Decimal(tmp)))
+        return round(s, 20)
