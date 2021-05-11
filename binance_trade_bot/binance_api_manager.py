@@ -252,7 +252,7 @@ class BinanceAPIManager:
                 order = self.binance_client.order_limit_buy(
                     symbol=origin_symbol + target_symbol,
                     quantity=order_quantity,
-                    price=from_coin_price,
+                    price=f'{from_coin_price:.18f}',
                 )
                 self.logger.info(order)
             except BinanceAPIException as e:
@@ -293,7 +293,7 @@ class BinanceAPIManager:
         origin_balance = self.get_currency_balance(origin_symbol)
         target_balance = self.get_currency_balance(target_symbol)
         from_coin_price = self.get_round(all_tickers.get_price(origin_symbol + target_symbol), 0.999)
-        print(from_coin_price)
+        # print(from_coin_price)
 
         order_quantity = self._sell_quantity(origin_symbol, target_symbol, origin_balance)
         self.logger.info(f"Selling {order_quantity} of {origin_symbol}")
@@ -303,7 +303,7 @@ class BinanceAPIManager:
         while order is None:
             # Should sell at calculated price to avoid lost coin
             order = self.binance_client.order_limit_sell(
-                symbol=origin_symbol + target_symbol, quantity=(order_quantity), price=from_coin_price
+                symbol=origin_symbol + target_symbol, quantity=(order_quantity), price=f'{from_coin_price:.18f}'
             )
 
         self.logger.info("order")
@@ -332,5 +332,5 @@ class BinanceAPIManager:
     def get_round(self, num, t):
         tmp = str(num)
         s = float(Decimal(num * t).quantize(Decimal(tmp)))
-        print(s)
+        # print(s)
         return round(s, 20)
