@@ -333,4 +333,4 @@ class BinanceAPIManager:
         tmp = str(num)
         s = float(Decimal(num * t).quantize(Decimal(tmp)))
         # print(s)
-        return round(s, 20)
+        return s
