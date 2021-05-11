@@ -239,7 +239,7 @@ class BinanceAPIManager:
         origin_balance = self.get_currency_balance(origin_symbol)
         target_balance = self.get_currency_balance(target_symbol)
         from_coin_price = self.get_round(all_tickers.get_price(origin_symbol + target_symbol), 1.002)
-        print(from_coin_price)
+        print(f'{from_coin_price:.20f}')
 
 
         order_quantity = self._buy_quantity(origin_symbol, target_symbol, target_balance, from_coin_price)
@@ -252,7 +252,7 @@ class BinanceAPIManager:
                 order = self.binance_client.order_limit_buy(
                     symbol=origin_symbol + target_symbol,
                     quantity=order_quantity,
-                    price=f'{from_coin_price:.18f}',
+                    price=f'{from_coin_price:.20f}',
                 )
                 self.logger.info(order)
             except BinanceAPIException as e:
@@ -293,7 +293,7 @@ class BinanceAPIManager:
         origin_balance = self.get_currency_balance(origin_symbol)
         target_balance = self.get_currency_balance(target_symbol)
         from_coin_price = self.get_round(all_tickers.get_price(origin_symbol + target_symbol), 0.999)
-        # print(from_coin_price)
+        print(f'{from_coin_price:.20f}')
 
         order_quantity = self._sell_quantity(origin_symbol, target_symbol, origin_balance)
         self.logger.info(f"Selling {order_quantity} of {origin_symbol}")
@@ -303,7 +303,7 @@ class BinanceAPIManager:
         while order is None:
             # Should sell at calculated price to avoid lost coin
             order = self.binance_client.order_limit_sell(
-                symbol=origin_symbol + target_symbol, quantity=(order_quantity), price=f'{from_coin_price:.18f}'
+                symbol=origin_symbol + target_symbol, quantity=(order_quantity), price=f'{from_coin_price:.20f}'
             )
 
         self.logger.info("order")
