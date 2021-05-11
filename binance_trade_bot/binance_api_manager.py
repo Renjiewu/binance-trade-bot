@@ -342,5 +342,8 @@ class BinanceAPIManager:
             if x:
                 return x[0]
 
+            else:
+                return f'{num:.8f}'
+
         else:
             return num
