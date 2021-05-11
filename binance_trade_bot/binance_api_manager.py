@@ -338,7 +338,7 @@ class BinanceAPIManager:
     def change_point(self, num):
         tmp = str(num)
         if 'e' in tmp.lower():
-            x = re.findall('(\d+\.\d+[1-9]+)0+', tmp)
+            x = re.findall('(\d+\.\d+[1-9]+)0+', f'{num:.10f}')
             if x:
                 return x[0]
 
