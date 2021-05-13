@@ -1,0 +1,12 @@
+[binance_user_config]
+api_key=aUwNpsfLr1w9GcOvo5xB5exaVoe22M9ciDSjrnt11Nqrku02gL4fWUHJcbXWB4HO
+api_secret_key=3mPSn3b5sxLKH8KhkjyrRciLhhHcFDelcFpl9f0GcDJJzy15WYu5YP7WgRoNbXLW
+current_coin=
+bridge=USDT
+tld=com
+hourToKeepScoutHistory=1
+scout_multiplier=5
+scout_sleep_time=5
+strategy=default
+buy_timeout=0
+sell_timeout=0
