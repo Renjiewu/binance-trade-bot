@@ -62,8 +62,8 @@ class MockBinanceManager(BinanceAPIManager):
             end_date = self.datetime + timedelta(minutes=1000)
             if end_date > datetime.now():
                 end_date = datetime.now()
-            end_date = end_date.strftime("%d %b %Y %H:%M:%S")
             self.logger.info(f"Fetching prices for {ticker_symbol} between {self.datetime} and {end_date}")
+            end_date = end_date.strftime("%d %b %Y %H:%M:%S")
             for result in self.binance_client.get_historical_klines(
                 ticker_symbol, "1m", target_date, end_date, limit=1000
             ):
@@ -176,8 +176,8 @@ def backtest(
     db.set_coins(config.SUPPORTED_COIN_LIST)
     manager = MockBinanceManager(config, db, logger, start_date, start_balances)
 
-    # starting_coin = db.get_coin(starting_coin or config.SUPPORTED_COIN_LIST[0])
-    starting_coin = db.get_coin('SHIB')
+    starting_coin = db.get_coin(starting_coin or config.SUPPORTED_COIN_LIST[0])
+    # starting_coin = db.get_coin('SHIB')
 
     if manager.get_currency_balance(starting_coin.symbol) == 0:
         manager.buy_alt(starting_coin, config.BRIDGE, manager.get_all_market_tickers())
