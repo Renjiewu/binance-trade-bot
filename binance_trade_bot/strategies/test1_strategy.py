@@ -1,8 +1,10 @@
 import random
 import sys
 from datetime import datetime
+from typing import Dict
 
 from binance_trade_bot.auto_trader import AutoTrader
+from binance_trade_bot.models import Pair
 
 
 class Strategy(AutoTrader):
@@ -33,10 +35,44 @@ class Strategy(AutoTrader):
 
         self._jump_to_best_coin(current_coin, current_coin_price, all_tickers)
 
+    def transaction_through_bridge(self, pair, all_tickers):
+        """
+        Jump from the source coin to the destination coin through bridge coin
+        """
+        if pair.from_coin.symbol == 'USDT' or pair.to_coin.symbol == 'USDT':
+            # print(0)
+            pass
+        can_sell = False
+        balance = self.manager.get_currency_balance(pair.from_coin.symbol)
+        from_coin_price = all_tickers.get_price(pair.from_coin + self.config.BRIDGE)
+
+        if pair.from_coin.symbol != 'USDT' and balance and balance * from_coin_price > self.manager.get_min_notional(
+                pair.from_coin, self.config.BRIDGE):
+            can_sell = True
+        else:
+            self.logger.info("Skipping sell")
+
+        if can_sell and self.manager.sell_alt(pair.from_coin, self.config.BRIDGE, all_tickers) is None:
+            self.logger.info("Couldn't sell, going back to scouting mode...")
+            return None
+
+        if pair.to_coin.symbol != 'USDT':
+            result = self.manager.buy_alt(pair.to_coin, self.config.BRIDGE, all_tickers)
+        else:
+            result = {"price": 1}
+
+        if result is not None:
+            self.db.set_current_coin(pair.to_coin)
+            self.update_trade_threshold(pair.to_coin, float(result["price"]), all_tickers)
+            return result
+
+        self.logger.info("Couldn't buy, going back to scouting mode...")
+        return None
+
     def bridge_scout(self):
         current_coin = self.db.get_current_coin()
         if self.manager.get_currency_balance(current_coin.symbol) > self.manager.get_min_notional(
-            current_coin.symbol, self.config.BRIDGE.symbol
+                current_coin.symbol, self.config.BRIDGE.symbol
         ):
             # Only scout if we don't have enough of the current coin
             return
@@ -66,3 +102,41 @@ class Strategy(AutoTrader):
                 all_tickers = self.manager.get_all_market_tickers()
                 self.manager.buy_alt(current_coin, self.config.BRIDGE, all_tickers)
                 self.logger.info("Ready to start trading")
+
+    def _get_ratios(self, coin, coin_price: float, all_tickers):
+        """
+        Given a coin, get the current price ratio for every other enabled coin
+        """
+        ratio_dict: Dict[Pair, float] = {}
+
+        if coin.symbol == 'USDT':
+            cmt = self.config.SCOUT_MULTIPLIER * 1.4
+        else:
+            cmt = self.config.SCOUT_MULTIPLIER
+
+        for pair in self.db.get_pairs_from(coin):
+            optional_coin_price = all_tickers.get_price(pair.to_coin + self.config.BRIDGE)
+            if pair.to_coin.symbol == 'USDT':
+                # optional_coin_price = coin_price
+                mt = -0.005 / 0.0075
+            else:
+                mt = cmt
+
+            if optional_coin_price is None:
+                self.logger.info(
+                    "Skipping scouting... optional coin {} not found".format(pair.to_coin + self.config.BRIDGE)
+                )
+                continue
+
+            self.db.log_scout(pair, pair.ratio, coin_price, optional_coin_price)
+
+            # Obtain (current coin)/(optional coin)
+            coin_opt_coin_ratio = coin_price / optional_coin_price
+
+            transaction_fee = self.manager.get_fee(pair.from_coin, self.config.BRIDGE, True) + self.manager.get_fee(
+                pair.to_coin, self.config.BRIDGE, False
+            )
+
+            ratio_dict[pair] = coin_opt_coin_ratio * (1 - transaction_fee * mt) - pair.ratio
+
+        return ratio_dict

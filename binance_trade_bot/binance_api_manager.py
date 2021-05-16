@@ -85,6 +85,7 @@ class BinanceAPIManager:
         try:
             # self.logger.info('Get all coins price')
             tmp = self.binance_client.get_all_tickers()
+            tmp.append({'USDTUSDT': '1'})
         except ConnectTimeout:
             raise('timeout')
 

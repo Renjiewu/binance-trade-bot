@@ -53,6 +53,8 @@ class MockBinanceManager(BinanceAPIManager):
         """
         Get ticker price of a specific coin
         """
+        if 'USDTUSDT' == ticker_symbol:
+            return 1
         target_date = self.datetime.strftime("%d %b %Y %H:%M:%S")
         key = f"{ticker_symbol} - {target_date}"
         val = cache.get(key, None)
@@ -174,7 +176,9 @@ def backtest(
     db.set_coins(config.SUPPORTED_COIN_LIST)
     manager = MockBinanceManager(config, db, logger, start_date, start_balances)
 
-    starting_coin = db.get_coin(starting_coin or config.SUPPORTED_COIN_LIST[0])
+    # starting_coin = db.get_coin(starting_coin or config.SUPPORTED_COIN_LIST[0])
+    starting_coin = db.get_coin('SHIB')
+
     if manager.get_currency_balance(starting_coin.symbol) == 0:
         manager.buy_alt(starting_coin, config.BRIDGE, manager.get_all_market_tickers())
     db.set_current_coin(starting_coin)
