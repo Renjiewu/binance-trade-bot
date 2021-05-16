@@ -85,9 +85,9 @@ class BinanceAPIManager:
         try:
             # self.logger.info('Get all coins price')
             tmp = self.binance_client.get_all_tickers()
-            tmp.append({'USDTUSDT': '1.00'})
+            tmp.append({'symbol': 'USDTUSDT', 'price': '1.00'})
         except ConnectTimeout:
-            raise('timeout')
+            raise ('timeout')
 
         return AllTickers(tmp)
 
@@ -221,7 +221,7 @@ class BinanceAPIManager:
         return self.retry(self._buy_alt, origin_coin, target_coin, all_tickers)
 
     def _buy_quantity(
-        self, origin_symbol: str, target_symbol: str, target_balance: float = None, from_coin_price: float = None
+            self, origin_symbol: str, target_symbol: str, target_balance: float = None, from_coin_price: float = None
     ):
         target_balance = target_balance or self.get_currency_balance(target_symbol)
         from_coin_price = from_coin_price or self.get_all_market_tickers().get_price(origin_symbol + target_symbol)
@@ -241,7 +241,6 @@ class BinanceAPIManager:
         target_balance = self.get_currency_balance(target_symbol)
         from_coin_price = self.get_round(all_tickers.get_price(origin_symbol + target_symbol), 1.002)
         print(self.change_point(from_coin_price))
-
 
         order_quantity = self._buy_quantity(origin_symbol, target_symbol, target_balance, from_coin_price)
         self.logger.info(f"BUY QTY {order_quantity}")
@@ -304,7 +303,8 @@ class BinanceAPIManager:
         while order is None:
             # Should sell at calculated price to avoid lost coin
             order = self.binance_client.order_limit_sell(
-                symbol=origin_symbol + target_symbol, quantity=(order_quantity), price=self.change_point(from_coin_price)
+                symbol=origin_symbol + target_symbol, quantity=(order_quantity),
+                price=self.change_point(from_coin_price)
             )
 
         self.logger.info("order")
