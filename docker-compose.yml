@@ -16,9 +16,9 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
     logging: 
-      driver: “json-file” 
-      options: 
-        max-size: “5g” 
+      driver: "json-file"
+      options:
+        max-size: "5g"
 
   api:
     image: binance_bot_test
@@ -34,9 +34,9 @@ services:
     depends_on:
       - crypto-trading
     logging: 
-      driver: “json-file” 
+      driver: "json-file"
       options: 
-        max-size: “5g” 
+        max-size: "5g"
 
   sqlitebrowser:
     image: ghcr.io/linuxserver/sqlitebrowser
@@ -51,6 +51,6 @@ services:
     ports:
       - 3000:3000
     logging: 
-      driver: “json-file” 
+      driver: "json-file"
       options: 
-        max-size: “5g” 
+        max-size: "5g"
