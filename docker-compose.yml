@@ -15,6 +15,10 @@ services:
     command: python -m binance_trade_bot
     environment:
       - PYTHONUNBUFFERED=1
+    logging: 
+      driver: “json-file” 
+      options: 
+        max-size: “5g” 
 
   api:
     image: binance_bot_test
@@ -29,6 +33,10 @@ services:
     command: gunicorn binance_trade_bot.api_server:app -k eventlet -w 1 --threads 1 -b 0.0.0.0:5123
     depends_on:
       - crypto-trading
+    logging: 
+      driver: “json-file” 
+      options: 
+        max-size: “5g” 
 
   sqlitebrowser:
     image: ghcr.io/linuxserver/sqlitebrowser
@@ -42,3 +50,7 @@ services:
       - ./data:/data
     ports:
       - 3000:3000
+    logging: 
+      driver: “json-file” 
+      options: 
+        max-size: “5g” 
