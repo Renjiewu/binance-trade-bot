@@ -12,6 +12,8 @@ services:
       - ./data:/app/data
       - ./logs:/app/logs
       - ./supported_coin_list:/app/supported_coin_list
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
     command: python -m binance_trade_bot
     environment:
       - PYTHONUNBUFFERED=1
