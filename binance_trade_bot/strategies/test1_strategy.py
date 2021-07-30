@@ -62,7 +62,7 @@ class Strategy(AutoTrader):
 
         if result is not None:
             self.db.set_current_coin(pair.to_coin)
-            self.update_trade_threshold(pair.to_coin, float(result["price"]))
+            self.update_trade_threshold(pair.to_coin, result.price)
             return result
 
         self.logger.info("Couldn't buy, going back to scouting mode...")
