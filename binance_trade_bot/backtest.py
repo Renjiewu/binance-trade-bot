@@ -2,6 +2,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from traceback import format_exc
 from typing import Dict
+import time
 
 from sqlitedict import SqliteDict
 
@@ -43,6 +44,8 @@ class MockBinanceManager(BinanceAPIManager):
         """
         Get ticker price of a specific coin
         """
+        if 'USDTUSDT' == ticker_symbol:
+            return 1
         target_date = self.datetime.strftime("%d %b %Y %H:%M:%S")
         key = f"{ticker_symbol} - {target_date}"
         val = cache.get(key, None)
@@ -50,8 +53,8 @@ class MockBinanceManager(BinanceAPIManager):
             end_date = self.datetime + timedelta(minutes=1000)
             if end_date > datetime.now():
                 end_date = datetime.now()
-            end_date = end_date.strftime("%d %b %Y %H:%M:%S")
             self.logger.info(f"Fetching prices for {ticker_symbol} between {self.datetime} and {end_date}")
+            end_date = end_date.strftime("%d %b %Y %H:%M:%S")
             for result in self.binance_client.get_historical_klines(
                 ticker_symbol, "1m", target_date, end_date, limit=1000
             ):
@@ -186,6 +189,7 @@ def backtest(
         while manager.datetime < end_date:
             try:
                 trader.scout()
+                # time.sleep(0.02)
             except Exception:  # pylint: disable=broad-except
                 logger.warning(format_exc())
             manager.increment(interval)
