@@ -2,22 +2,21 @@ version: "3"
 
 services:
   crypto-trading:
-    image: binance_bot_test
-    extra_hosts:
-      - "api.binance.com:52.84.150.34"
+    image: edeng23/binance-trade-bot
     container_name: binance_trader
     working_dir: /app
     volumes:
       - ./user.cfg:/app/user.cfg
+      - ./supported_coin_list:/app/supported_coin_list
       - ./data:/app/data
       - ./logs:/app/logs
-      - ./supported_coin_list:/app/supported_coin_list
+      - ./config:/app/config
     command: python -m binance_trade_bot
     environment:
       - PYTHONUNBUFFERED=1
 
   api:
-    image: binance_bot_test
+    image: edeng23/binance-trade-bot
     container_name: binance_trader_api
     working_dir: /app
     volumes:

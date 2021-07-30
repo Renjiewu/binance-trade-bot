@@ -1,23 +1,18 @@
 from datetime import datetime
-import time
 
 from binance_trade_bot import backtest
 
 if __name__ == "__main__":
     history = []
-    for manager in backtest(datetime(2021, 5, 12), datetime.now()):
-        time.sleep(1)
-        # btc_value = manager.collate_coins("BTC")
+    for manager in backtest(datetime(2021, 1, 1), datetime.now()):
+        btc_value = manager.collate_coins("BTC")
         bridge_value = manager.collate_coins(manager.config.BRIDGE.symbol)
-        # history.append((btc_value, bridge_value))
-        history.append((bridge_value))
-        # btc_diff = round((btc_value - history[0][0]) / history[0][0], 3)
-        # bridge_diff = round((bridge_value - history[0][1]) / history[0][1], 3)
-        bridge_diff = round((bridge_value - history[0]) / history[0], 3)
+        history.append((btc_value, bridge_value))
+        btc_diff = round((btc_value - history[0][0]) / history[0][0] * 100, 3)
+        bridge_diff = round((bridge_value - history[0][1]) / history[0][1] * 100, 3)
         print("------")
         print("TIME:", manager.datetime)
         print("BALANCES:", manager.balances)
-        # print("BTC VALUE:", btc_value, f"({btc_diff}%)")
+        print("BTC VALUE:", btc_value, f"({btc_diff}%)")
         print(f"{manager.config.BRIDGE.symbol} VALUE:", bridge_value, f"({bridge_diff}%)")
         print("------")
-        time.sleep(3)
