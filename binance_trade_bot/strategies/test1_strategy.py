@@ -113,7 +113,10 @@ class Strategy(AutoTrader):
             cmt = self.config.SCOUT_MULTIPLIER
 
         for pair in self.db.get_pairs_from(coin):
-            optional_coin_price = self.manager.get_ticker_price(pair.to_coin + self.config.BRIDGE)
+            if pair.to_coin.symbol == 'USDT':
+                optional_coin_price = 1
+            else:
+                optional_coin_price = self.manager.get_ticker_price(pair.to_coin + self.config.BRIDGE)
 
             if optional_coin_price is None:
                 self.logger.info(
