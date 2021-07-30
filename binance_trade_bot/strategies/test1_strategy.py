@@ -116,11 +116,6 @@ class Strategy(AutoTrader):
 
         for pair in self.db.get_pairs_from(coin):
             optional_coin_price = all_tickers.get_price(pair.to_coin + self.config.BRIDGE)
-            if pair.to_coin.symbol == 'USDT':
-                # optional_coin_price = coin_price
-                mt = -0.005 / 0.0075
-            else:
-                mt = cmt
 
             if optional_coin_price is None:
                 self.logger.info(
@@ -136,6 +131,11 @@ class Strategy(AutoTrader):
             transaction_fee = self.manager.get_fee(pair.from_coin, self.config.BRIDGE, True) + self.manager.get_fee(
                 pair.to_coin, self.config.BRIDGE, False
             )
+            if pair.to_coin.symbol == 'USDT':
+                # optional_coin_price = coin_price
+                mt = -0.001 / transaction_fee
+            else:
+                mt = cmt
 
             ratio_dict[pair] = coin_opt_coin_ratio * (1 - transaction_fee * mt) - pair.ratio
 

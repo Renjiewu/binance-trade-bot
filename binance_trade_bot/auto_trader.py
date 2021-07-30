@@ -190,3 +190,7 @@ class AutoTrader:
                 cv = CoinValue(coin, balance, usd_value, btc_value, datetime=now)
                 session.add(cv)
                 self.db.send_update(cv)
+
+    def get_history(self):
+        pass
+        #todo:添加获取历史
