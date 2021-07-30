@@ -48,6 +48,8 @@ class BinanceAPIManager:
 
     def get_fee(self, origin_coin: Coin, target_coin: Coin, selling: bool):
         base_fee = self.get_trade_fees()[origin_coin + target_coin]
+        return base_fee
+
         if not self.get_using_bnb_for_fees():
             return base_fee
 
