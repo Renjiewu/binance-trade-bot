@@ -1,8 +1,6 @@
-version: "3"
-
 services:
   crypto-trading:
-    image: edeng23/binance-trade-bot
+    image: dockerhub.datagrand.com/baize/binance-trade-bot
     container_name: binance_trader
     working_dir: /app
     volumes:
@@ -16,7 +14,7 @@ services:
       - PYTHONUNBUFFERED=1
 
   api:
-    image: edeng23/binance-trade-bot
+    image: dockerhub.datagrand.com/baize/binance-trade-bot
     container_name: binance_trader_api
     working_dir: /app
     volumes:
@@ -35,9 +33,26 @@ services:
     environment:
       - PUID=1000
       - PGID=1000
-      - TZ=Europe/Berlin
+      - TZ=Asia/Shanghai
     volumes:
       - ./data/config:/config
       - ./data:/data
     ports:
       - 3000:3000
+
+  dev:
+    image: dockerhub.datagrand.com/baize/binance-trade-bot
+    container_name: binance_trader_dev
+    working_dir: /app
+    volumes:
+      - ./user.cfg:/app/user.cfg
+      - ./supported_coin_list:/app/supported_coin_list
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./.vscode:/app/.vscode
+      - ./.vscode-server:/root/.vscode-server
+      - ./binance_trade_bot:/app/binance_trade_bot
+      - ./config:/app/config
+    command: ["sh", "-c", "tail -f /dev/null"]
+    environment:
+      - PYTHONUNBUFFERED=1

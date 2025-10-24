@@ -4,7 +4,7 @@ import os
 
 from .models import Coin
 
-CFG_FL_NAME = "user.cfg"
+CFG_FL_NAME = "user.cfg/user.cfg"
 USER_CFG_SECTION = "binance_user_config"
 
 
