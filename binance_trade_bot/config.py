@@ -4,7 +4,7 @@ import os
 
 from .models import Coin
 
-CFG_FL_NAME = "user.cfg/user.cfg"
+CFG_FL_NAME = "user.cfg"
 USER_CFG_SECTION = "binance_user_config"
 
 
@@ -24,6 +24,9 @@ class Config:  # pylint: disable=too-few-public-methods,too-many-instance-attrib
             "sell_timeout": "0",
             "buy_timeout": "0",
             "testnet": False,
+            "stop_loss_enabled": "yes",
+            "stop_loss_percentage": "5.0",
+            "trailing_stop_hours": "24",
         }
 
         if not os.path.exists(CFG_FL_NAME):
@@ -77,3 +80,8 @@ class Config:  # pylint: disable=too-few-public-methods,too-many-instance-attrib
 
         self.USE_MARGIN = os.environ.get("USE_MARGIN") or config.get(USER_CFG_SECTION, "use_margin")
         self.SCOUT_MARGIN = float(os.environ.get("SCOUT_MARGIN") or config.get(USER_CFG_SECTION, "scout_margin"))
+
+        # Stop loss configuration
+        self.STOP_LOSS_ENABLED = (os.environ.get("STOP_LOSS_ENABLED") or config.get(USER_CFG_SECTION, "stop_loss_enabled")).lower() == "yes"
+        self.STOP_LOSS_PERCENTAGE = float(os.environ.get("STOP_LOSS_PERCENTAGE") or config.get(USER_CFG_SECTION, "stop_loss_percentage"))
+        self.TRAILING_STOP_HOURS = int(os.environ.get("TRAILING_STOP_HOURS") or config.get(USER_CFG_SECTION, "trailing_stop_hours"))

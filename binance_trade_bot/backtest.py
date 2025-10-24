@@ -69,6 +69,8 @@ class MockBinanceManager(BinanceAPIManager):
         return self.balances.get(currency_symbol, 0)
 
     def buy_alt(self, origin_coin: Coin, target_coin: Coin):
+        trade_log = self.db.start_trade_log(origin_coin, target_coin, False)
+
         origin_symbol = origin_coin.symbol
         target_symbol = target_coin.symbol
 
@@ -85,6 +87,7 @@ class MockBinanceManager(BinanceAPIManager):
             f"Bought {origin_symbol}, balance now: {self.balances[origin_symbol]} - bridge: "
             f"{self.balances[target_symbol]}"
         )
+        trade_log.set_complete(target_quantity)
 
         event = defaultdict(
             lambda: None,
@@ -95,6 +98,8 @@ class MockBinanceManager(BinanceAPIManager):
         return BinanceOrder(event)
 
     def sell_alt(self, origin_coin: Coin, target_coin: Coin):
+        trade_log = self.db.start_trade_log(origin_coin, target_coin, True)
+
         origin_symbol = origin_coin.symbol
         target_symbol = target_coin.symbol
 
@@ -111,6 +116,8 @@ class MockBinanceManager(BinanceAPIManager):
             f"Sold {origin_symbol}, balance now: {self.balances[origin_symbol]} - bridge: "
             f"{self.balances[target_symbol]}"
         )
+
+        trade_log.set_complete(target_quantity)
         return {"price": from_coin_price}
 
     def collate_coins(self, target_symbol: str):
@@ -194,11 +201,13 @@ def backtest(
     n = 1
     try:
         while manager.datetime < end_date:
-            try:
-                trader.scout()
-            except Exception:  # pylint: disable=broad-except
-                logger.warning(format_exc())
-            manager.increment(interval)
+            if n % interval == 0:
+                try:
+                    trader.update_values(manager.datetime)
+                    trader.scout(current_time=manager.datetime)
+                except Exception:  # pylint: disable=broad-except
+                    logger.warning(format_exc())
+            manager.increment(1)
             if n % yield_interval == 0:
                 yield manager
             n += 1

@@ -172,11 +172,12 @@ class AutoTrader:
                     return coin
         return None
 
-    def update_values(self):
+    def update_values(self, current_time: datetime|None = None):
         """
         Log current value state of all altcoin balances against BTC and USDT in DB.
         """
-        now = datetime.now()
+        if current_time is None:
+            current_time = datetime.now()
 
         session: Session
         with self.db.db_session() as session:
@@ -185,8 +186,15 @@ class AutoTrader:
                 balance = self.manager.get_currency_balance(coin.symbol)
                 if balance == 0:
                     continue
-                usd_value = self.manager.get_ticker_price(coin + "USDT")
-                btc_value = self.manager.get_ticker_price(coin + "BTC")
-                cv = CoinValue(coin, balance, usd_value, btc_value, datetime=now)
+                
+                if coin.symbol == "BTC":
+                    usd_value = self.manager.get_ticker_price("BTCUSDT")
+                    btc_value = 1.0
+                elif coin.symbol == "USDT":
+                    continue
+                else:
+                    usd_value = self.manager.get_ticker_price(coin + "USDT")
+                    btc_value = self.manager.get_ticker_price(coin + "BTC")
+                cv = CoinValue(coin, balance, usd_value, btc_value, datetime=current_time)
                 session.add(cv)
                 self.db.send_update(cv)

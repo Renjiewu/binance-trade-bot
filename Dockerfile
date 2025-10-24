@@ -4,7 +4,7 @@ ARG PIP_INDEX=https://pypi.tuna.tsinghua.edu.cn/simple
 
 WORKDIR /install
 
-RUN sed -i "s@http://\(deb\|security\).debian.org@https://mirrors.tencent.com@g" /etc/apt/sources.list && apt update && apt install -y rustc
+RUN sed -i "s@http://\(deb\|security\).debian.org@https://mirrors.tencent.com@g" /etc/apt/sources.list && apt update && apt install -y rustc sqlite3
 
 COPY requirements.txt /requirements.txt
 RUN pip config set global.index-url "$PIP_INDEX" && \

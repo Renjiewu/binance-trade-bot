@@ -145,6 +145,180 @@ class Database:
             session.expunge_all()
             return pairs
 
+    def get_latest_buy_trade(self, coin: Union[Coin, str]) -> Optional[Trade]:
+        """
+        Get the latest completed buy trade for a specific coin
+        """
+        coin = self.get_coin(coin)
+        session: Session
+        with self.db_session() as session:
+            trade = (
+                session.query(Trade)
+                .filter(
+                    Trade.alt_coin == coin,
+                    Trade.selling.is_(False),
+                    Trade.state == TradeState.COMPLETE
+                )
+                .order_by(Trade.datetime.desc())
+                .first()
+            )
+            if trade:
+                session.expunge(trade)
+            return trade
+
+    def get_coin_recent_high_price(self, coin: Union[Coin, str], hours: int = 24, current_time: Optional[datetime] = None) -> Optional[float]:
+        """
+        Get the highest price for a coin in recent hours from scout history
+        """
+        coin = self.get_coin(coin)
+        session: Session
+        with self.db_session() as session:
+            time_diff = current_time - timedelta(hours=hours) if current_time else datetime.now() - timedelta(hours=hours)
+            
+            # 从侦察历史中获取最近的最高价
+            pairs_from = session.query(Pair).filter(Pair.from_coin == coin).all()
+            
+            if not pairs_from:
+                return None
+                
+            max_price = 0
+            for pair in pairs_from:
+                scout_records = (
+                    session.query(ScoutHistory)
+                    .filter(
+                        ScoutHistory.pair == pair,
+                        ScoutHistory.datetime >= time_diff
+                    )
+                    .all()
+                )
+                
+                for record in scout_records:
+                    if record.current_coin_price and record.current_coin_price > max_price:
+                        max_price = record.current_coin_price
+            
+            return max_price if max_price > 0 else None
+
+    def record_price_point(self, coin: Union[Coin, str], price: float, current_time: Optional[datetime] = None):
+        """
+        Record a price point for tracking high prices
+        """
+        coin = self.get_coin(coin)
+        session: Session
+        with self.db_session() as session:
+            # 创建价格记录点用于追踪
+            if isinstance(coin, Coin):
+                coin = session.merge(coin)
+            price_record = CoinValue(
+                coin=coin,
+                balance=1.0,  # 使用1.0作为基准
+                usd_price=price,
+                btc_price=price,  # 简化处理
+                interval=Interval.MINUTELY,
+                datetime=current_time or datetime.now()
+            )
+            session.add(price_record)
+            # session.flush()
+            self.send_update(price_record)
+            # print(111)
+            # session.commit()
+        # print(2222)
+
+    def get_coin_high_price_from_values(self, coin: Union[Coin, str], hours: int = 24, current_time: Optional[datetime] = None) -> Optional[float]:
+        """
+        Get the highest price for a coin from CoinValue records
+        """
+        coin = self.get_coin(coin)
+        session: Session
+        with self.db_session() as session:
+            time_diff = current_time - timedelta(hours=hours) if current_time else datetime.now() - timedelta(hours=hours)
+            
+            # 直接查询所有记录然后在Python中找最大值
+            coin_values = (
+                session.query(CoinValue)
+                .filter(CoinValue.coin == coin)
+                .filter(CoinValue.datetime >= time_diff)
+                .all()
+            )
+            
+            if not coin_values:
+                return None
+                
+            # 提取价格值并找最大值
+            prices = [cv.usd_price for cv in coin_values if cv.usd_price is not None]
+            
+            return max(prices) if prices else None
+
+    def clear_coin_values_before(self, before_time: datetime, coin: Union[Coin, str] = None, interval: Optional[str] = None) -> int:
+        """
+        Clear CoinValue records before a given time
+        
+        Args:
+            before_time: Delete records older than this datetime
+            coin: Optional - specific coin to clear (if None, clears all coins)
+            interval: Optional - specific interval to clear (MINUTELY, HOURLY, DAILY, WEEKLY)
+        
+        Returns:
+            Number of records deleted
+        """
+        session: Session
+        with self.db_session() as session:
+            query = session.query(CoinValue).filter(CoinValue.datetime < before_time)
+            
+            # 如果指定了币种，添加币种过滤
+            if coin is not None:
+                coin = self.get_coin(coin)
+                query = query.filter(CoinValue.coin == coin)
+            
+            # 如果指定了时间间隔，添加间隔过滤
+            if interval is not None:
+                from .models.coin_value import Interval
+                interval_enum = getattr(Interval, interval.upper(), None)
+                if interval_enum:
+                    query = query.filter(CoinValue.interval == interval_enum)
+                else:
+                    self.logger.warning(f"Invalid interval: {interval}")
+                    return 0
+            
+            # 计算要删除的记录数
+            count = query.count()
+            
+            if count > 0:
+                # 执行删除
+                query.delete()
+                self.logger.info(f"Cleared {count} CoinValue records before {before_time}")
+            else:
+                self.logger.info("No CoinValue records found to clear")
+            
+            return count
+
+    def clear_old_coin_values(self, days: int = 30, coin: Union[Coin, str] = None) -> int:
+        """
+        Clear CoinValue records older than specified days
+        
+        Args:
+            days: Number of days to keep (delete records older than this)
+            coin: Optional - specific coin to clear (if None, clears all coins)
+        
+        Returns:
+            Number of records deleted
+        """
+        cutoff_time = datetime.now() - timedelta(days=days)
+        return self.clear_coin_values_before(cutoff_time, coin)
+
+    def clear_coin_values_by_interval(self, interval: str, keep_days: int) -> int:
+        """
+        Clear CoinValue records by specific interval and age
+        
+        Args:
+            interval: Time interval (MINUTELY, HOURLY, DAILY, WEEKLY)
+            keep_days: Number of days to keep for this interval
+        
+        Returns:
+            Number of records deleted
+        """
+        cutoff_time = datetime.now() - timedelta(days=keep_days)
+        return self.clear_coin_values_before(cutoff_time, interval=interval)
+
     def log_scout(
         self,
         pair: Pair,
