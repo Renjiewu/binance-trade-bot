@@ -27,6 +27,7 @@ class Config:  # pylint: disable=too-few-public-methods,too-many-instance-attrib
             "stop_loss_enabled": "yes",
             "stop_loss_percentage": "5.0",
             "trailing_stop_hours": "24",
+            "min_purchase_score": "10.0",
         }
 
         if not os.path.exists(CFG_FL_NAME):
@@ -85,3 +86,6 @@ class Config:  # pylint: disable=too-few-public-methods,too-many-instance-attrib
         self.STOP_LOSS_ENABLED = (os.environ.get("STOP_LOSS_ENABLED") or config.get(USER_CFG_SECTION, "stop_loss_enabled")).lower() == "yes"
         self.STOP_LOSS_PERCENTAGE = float(os.environ.get("STOP_LOSS_PERCENTAGE") or config.get(USER_CFG_SECTION, "stop_loss_percentage"))
         self.TRAILING_STOP_HOURS = int(os.environ.get("TRAILING_STOP_HOURS") or config.get(USER_CFG_SECTION, "trailing_stop_hours"))
+        
+        # USDT purchase configuration
+        self.MIN_PURCHASE_SCORE = float(os.environ.get("MIN_PURCHASE_SCORE") or config.get(USER_CFG_SECTION, "min_purchase_score"))

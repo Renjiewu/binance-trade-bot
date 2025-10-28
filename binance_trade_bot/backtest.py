@@ -158,6 +158,7 @@ def backtest(
     end_date: datetime = None,
     interval=1,
     yield_interval=100,
+    invoke_turns=1,
     start_balances: Dict[str, float] = None,
     starting_coin: str = None,
     config: Config = None,
@@ -201,13 +202,13 @@ def backtest(
     n = 1
     try:
         while manager.datetime < end_date:
-            if n % interval == 0:
+            if n % invoke_turns == 0:
                 try:
                     trader.update_values(manager.datetime)
                     trader.scout(current_time=manager.datetime)
                 except Exception:  # pylint: disable=broad-except
                     logger.warning(format_exc())
-            manager.increment(1)
+            manager.increment(interval)
             if n % yield_interval == 0:
                 yield manager
             n += 1

@@ -166,6 +166,27 @@ class Database:
                 session.expunge(trade)
             return trade
 
+    def get_latest_sell_trade(self, coin: Union[Coin, str]) -> Optional[Trade]:
+        """
+        Get the latest completed buy trade for a specific coin
+        """
+        coin = self.get_coin(coin)
+        session: Session
+        with self.db_session() as session:
+            trade = (
+                session.query(Trade)
+                .filter(
+                    Trade.alt_coin == coin,
+                    Trade.selling.is_(True),
+                    Trade.state == TradeState.COMPLETE
+                )
+                .order_by(Trade.datetime.desc())
+                .first()
+            )
+            if trade:
+                session.expunge(trade)
+            return trade
+
     def get_coin_recent_high_price(self, coin: Union[Coin, str], hours: int = 24, current_time: Optional[datetime] = None) -> Optional[float]:
         """
         Get the highest price for a coin in recent hours from scout history
@@ -197,6 +218,38 @@ class Database:
                         max_price = record.current_coin_price
             
             return max_price if max_price > 0 else None
+
+    def get_coin_recent_low_price(self, coin: Union[Coin, str], hours: int = 24, current_time: Optional[datetime] = None) -> Optional[float]:
+        """
+        Get the lowest price for a coin from scout history in recent hours
+        """
+        coin = self.get_coin(coin)
+        session: Session
+        with self.db_session() as session:
+            time_diff = current_time - timedelta(hours=hours) if current_time else datetime.now() - timedelta(hours=hours)
+            
+            # 从侦察历史中获取最近的最低价
+            pairs_from = session.query(Pair).filter(Pair.from_coin == coin).all()
+            
+            if not pairs_from:
+                return None
+                
+            min_price = float('inf')
+            for pair in pairs_from:
+                scout_records = (
+                    session.query(ScoutHistory)
+                    .filter(
+                        ScoutHistory.pair == pair,
+                        ScoutHistory.datetime >= time_diff
+                    )
+                    .all()
+                )
+                
+                for record in scout_records:
+                    if record.current_coin_price and record.current_coin_price < min_price:
+                        min_price = record.current_coin_price
+            
+            return min_price if min_price != float('inf') else None
 
     def record_price_point(self, coin: Union[Coin, str], price: float, current_time: Optional[datetime] = None):
         """
@@ -247,6 +300,31 @@ class Database:
             prices = [cv.usd_price for cv in coin_values if cv.usd_price is not None]
             
             return max(prices) if prices else None
+
+    def get_coin_low_price_from_values(self, coin: Union[Coin, str], hours: int = 24, current_time: Optional[datetime] = None) -> Optional[float]:
+        """
+        Get the lowest price for a coin from CoinValue records
+        """
+        coin = self.get_coin(coin)
+        session: Session
+        with self.db_session() as session:
+            time_diff = current_time - timedelta(hours=hours) if current_time else datetime.now() - timedelta(hours=hours)
+            
+            # 直接查询所有记录然后在Python中找最小值
+            coin_values = (
+                session.query(CoinValue)
+                .filter(CoinValue.coin == coin)
+                .filter(CoinValue.datetime >= time_diff)
+                .all()
+            )
+            
+            if not coin_values:
+                return None
+                
+            # 提取价格值并找最小值
+            prices = [cv.usd_price for cv in coin_values if cv.usd_price is not None]
+            
+            return min(prices) if prices else None
 
     def clear_coin_values_before(self, before_time: datetime, coin: Union[Coin, str] = None, interval: Optional[str] = None) -> int:
         """
@@ -318,6 +396,75 @@ class Database:
         """
         cutoff_time = datetime.now() - timedelta(days=keep_days)
         return self.clear_coin_values_before(cutoff_time, interval=interval)
+
+    def get_recent_price_points(self, coin: Union[Coin, str], hours: int = 24, current_time: Optional[datetime] = None) -> list:
+        """
+        获取最近N小时的价格点（每小时一个点）
+        返回价格列表，按时间从旧到新排序
+        
+        Args:
+            coin: 币种对象或币种符号
+            hours: 查询最近多少小时的数据
+            current_time: 当前时间（用于回测，如果为None则使用当前时间）
+        
+        Returns:
+            价格列表，每小时一个平均价格
+        """
+        try:
+            coin = self.get_coin(coin)
+            if current_time is None:
+                current_time = datetime.now()
+            
+            start_time = current_time - timedelta(hours=hours)
+            
+            session: Session
+            with self.db_session() as session:
+                # 获取这段时间内的所有价格记录
+                if isinstance(coin, Coin):
+                    coin = session.merge(coin)
+                
+                coin_values = session.query(CoinValue).filter(
+                    CoinValue.coin == coin,
+                    CoinValue.datetime >= start_time,
+                    CoinValue.datetime <= current_time
+                ).order_by(CoinValue.datetime.asc()).all()
+                
+                if not coin_values:
+                    return []
+                
+                # 按小时分组，每小时取平均价
+                price_points = []
+                current_hour_values = []
+                current_hour = None
+                
+                for cv in coin_values:
+                    hour = cv.datetime.replace(minute=0, second=0, microsecond=0)
+                    
+                    if current_hour is None:
+                        current_hour = hour
+                    
+                    if hour == current_hour:
+                        current_hour_values.append(cv.usd_price)
+                    else:
+                        # 完成上一个小时的统计
+                        if current_hour_values:
+                            avg_price = sum(current_hour_values) / len(current_hour_values)
+                            price_points.append(avg_price)
+                        
+                        # 开始新的小时
+                        current_hour = hour
+                        current_hour_values = [cv.usd_price]
+                
+                # 添加最后一个小时的数据
+                if current_hour_values:
+                    avg_price = sum(current_hour_values) / len(current_hour_values)
+                    price_points.append(avg_price)
+                
+                return price_points
+                
+        except Exception as e:
+            self.logger.error(f"Error getting recent price points for {coin.symbol}: {e}")
+            return []
 
     def log_scout(
         self,

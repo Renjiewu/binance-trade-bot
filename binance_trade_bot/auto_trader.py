@@ -184,8 +184,8 @@ class AutoTrader:
             coins: List[Coin] = session.query(Coin).all()
             for coin in coins:
                 balance = self.manager.get_currency_balance(coin.symbol)
-                if balance == 0:
-                    continue
+                # if balance == 0:
+                #     continue
                 
                 if coin.symbol == "BTC":
                     usd_value = self.manager.get_ticker_price("BTCUSDT")
