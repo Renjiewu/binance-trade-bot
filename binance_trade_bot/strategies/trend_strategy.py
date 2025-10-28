@@ -303,9 +303,12 @@ class Strategy(AutoTrader):
             
             # 记录评估结果
             if evaluations:
-                self.logger.info(f"Found {len(evaluations)} bullish coins")
-                for eval in sorted(evaluations, key=lambda x: x['score'], reverse=True)[:5]:
-                    self.logger.info(f"  {eval['coin'].symbol}: {eval['score']:.1f}")
+                # self.logger.info(f"Found {len(evaluations)} bullish coins")
+                print(
+                f"{datetime.now()} - CONSOLE - INFO - Found {len(evaluations)} bullish coins.\n"
+                '\n'.join([f"  {eval['coin'].symbol}: {eval['score']:.1f}" for eval in sorted(evaluations, key=lambda x: x['score'], reverse=True)[:5]]),
+                end="\r",
+                )
             
             # 只在强烈看涨时买入
             if best_coin and best_score >= self.bullish_threshold + 10:  # 需要更强的信号
@@ -315,7 +318,11 @@ class Strategy(AutoTrader):
                     self.db.set_current_coin(best_coin)
                     self.logger.info(f"Successfully bought {best_coin.symbol}")
             else:
-                self.logger.info(f"Staying in USDT (best score: {best_score:.1f})")
+                print(
+                    f"{datetime.now()} - CONSOLE - INFO - Analyzing market trends. "
+                    f"Staying in USDT (best score: {best_score:.1f})",
+                    end="\r",
+                )
                 
         except Exception as e:
             self.logger.error(f"Error in USDT scouting: {e}")
