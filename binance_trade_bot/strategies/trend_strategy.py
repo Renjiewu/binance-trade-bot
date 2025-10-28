@@ -324,6 +324,7 @@ class Strategy(AutoTrader):
         """
         寻找比当前币种更好的币种
         """
+        tmp = []
         try:
             all_coins = self.db.get_coins(only_enabled=True)
             current_sentiment = self._analyze_market_sentiment(current_coin, current_coin_price, current_time)
@@ -343,6 +344,7 @@ class Strategy(AutoTrader):
                     sentiment = self._analyze_market_sentiment(coin, coin_price, current_time)
                     
                     # 需要明显更好才切换（避免频繁交易）
+                    tmp.append((coin.symbol, sentiment['score']))
                     if sentiment['score'] > best_score + 15:
                         best_score = sentiment['score']
                         best_coin = coin
@@ -356,7 +358,13 @@ class Strategy(AutoTrader):
                     f"Found better coin: {best_coin.symbol} "
                     f"(score: {best_score:.1f} vs current: {current_sentiment['score']:.1f})"
                 )
-                self._jump_to_best_coin(current_coin, current_coin_price)
+                # self._jump_to_best_coin(current_coin, current_coin_price)
+                buy_result = self.manager.buy_alt(best_coin, self.config.BRIDGE)
+                if buy_result:
+                    self.db.set_current_coin(best_coin)
+                    self.logger.info(f"Converted to {best_coin.symbol}")
+                else:
+                    self.logger.error(f"Failed to convert to {best_coin.symbol}")
             else:
                 self.logger.debug(f"No better coin found, staying with {current_coin.symbol}")
                 
