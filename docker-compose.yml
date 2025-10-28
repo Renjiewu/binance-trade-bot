@@ -53,6 +53,7 @@ services:
       - ./.vscode-server:/root/.vscode-server
       - ./binance_trade_bot:/app/binance_trade_bot
       - ./config:/app/config
+      - ./backtests.py:/app/backtests.py
     command: ["sh", "-c", "tail -f /dev/null"]
     environment:
       - PYTHONUNBUFFERED=1
