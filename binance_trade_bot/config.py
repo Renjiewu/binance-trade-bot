@@ -89,3 +89,8 @@ class Config:  # pylint: disable=too-few-public-methods,too-many-instance-attrib
         
         # USDT purchase configuration
         self.MIN_PURCHASE_SCORE = float(os.environ.get("MIN_PURCHASE_SCORE") or config.get(USER_CFG_SECTION, "min_purchase_score"))
+
+        # Trend strategy configuration
+        self.TREND_WINDOW_HOURS = int(os.environ.get("TREND_WINDOW_HOURS") or config.get(USER_CFG_SECTION, "trend_window_hours", fallback="12"))
+        self.BULLISH_THRESHOLD = float(os.environ.get("BULLISH_THRESHOLD") or config.get(USER_CFG_SECTION, "bullish_threshold", fallback="60.0"))
+        self.BEARISH_THRESHOLD = float(os.environ.get("BEARISH_THRESHOLD") or config.get(USER_CFG_SECTION, "bearish_threshold", fallback="40.0"))
