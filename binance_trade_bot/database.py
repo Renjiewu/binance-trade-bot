@@ -480,13 +480,17 @@ class Database:
             session.add(sh)
             self.send_update(sh)
 
-    def prune_scout_history(self):
-        time_diff = datetime.now() - timedelta(hours=self.config.SCOUT_HISTORY_PRUNE_TIME)
+    def prune_scout_history(self, current_time: Optional[datetime] = None):
+        if current_time is None:
+            current_time = datetime.now()
+        time_diff = current_time - timedelta(hours=self.config.SCOUT_HISTORY_PRUNE_TIME)
         session: Session
         with self.db_session() as session:
             session.query(ScoutHistory).filter(ScoutHistory.datetime < time_diff).delete()
 
-    def prune_value_history(self):
+    def prune_value_history(self, current_time: Optional[datetime] = None):
+        if current_time is None:
+            current_time = datetime.now()
         session: Session
         with self.db_session() as session:
             # Sets the first entry for each coin for each hour as 'hourly'
@@ -513,19 +517,19 @@ class Database:
 
             # The last 24 hours worth of minutely entries will be kept, so
             # count(coins) * 1440 entries
-            time_diff = datetime.now() - timedelta(hours=24)
+            time_diff = current_time - timedelta(hours=24)
             session.query(CoinValue).filter(
                 CoinValue.interval == Interval.MINUTELY, CoinValue.datetime < time_diff
             ).delete()
 
             # The last 28 days worth of hourly entries will be kept, so count(coins) * 672 entries
-            time_diff = datetime.now() - timedelta(days=28)
+            time_diff = current_time - timedelta(days=28)
             session.query(CoinValue).filter(
                 CoinValue.interval == Interval.HOURLY, CoinValue.datetime < time_diff
             ).delete()
 
             # The last years worth of daily entries will be kept, so count(coins) * 365 entries
-            time_diff = datetime.now() - timedelta(days=365)
+            time_diff = current_time - timedelta(days=365)
             session.query(CoinValue).filter(
                 CoinValue.interval == Interval.DAILY, CoinValue.datetime < time_diff
             ).delete()

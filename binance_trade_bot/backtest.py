@@ -212,6 +212,10 @@ def backtest(
             if n % yield_interval == 0:
                 yield manager
             n += 1
+            if n % 60 == 0:  # Prune daily
+                db.prune_scout_history(current_time=manager.datetime)
+                db.prune_value_history(current_time=manager.datetime)
+
     except KeyboardInterrupt:
         pass
     cache.close()

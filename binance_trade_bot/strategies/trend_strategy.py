@@ -76,6 +76,7 @@ class Strategy(AutoTrader):
             # 震荡：保持当前持仓，但可以考虑切换到更强的币种
             self.logger.debug(f"Neutral trend for {current_coin.symbol}, checking for better options")
             self._find_better_coin(current_coin, current_coin_price, current_time)
+            # self._jump_to_best_coin(current_coin, current_coin_price)
 
     def _analyze_market_sentiment(self, coin, current_price, current_time=None) -> dict:
         """
@@ -305,13 +306,13 @@ class Strategy(AutoTrader):
             if evaluations:
                 # self.logger.info(f"Found {len(evaluations)} bullish coins")
                 print(
-                f"{datetime.now()} - CONSOLE - INFO - Found {len(evaluations)} bullish coins.\n"
-                '\n'.join([f"  {eval['coin'].symbol}: {eval['score']:.1f}" for eval in sorted(evaluations, key=lambda x: x['score'], reverse=True)[:5]]),
+                f"{datetime.now()} - CONSOLE - INFO - Found {len(evaluations)} bullish coins. "
+                ';'.join([f"{eval['coin'].symbol}: {eval['score']:.1f}" for eval in sorted(evaluations, key=lambda x: x['score'], reverse=True)[:5]]),
                 end="\r",
                 )
             
             # 只在强烈看涨时买入
-            if best_coin and best_score >= self.bullish_threshold + 10:  # 需要更强的信号
+            if best_coin and best_score >= self.bullish_threshold + 5:  # 需要更强的信号
                 self.logger.info(f"Buying {best_coin.symbol} (bullish score: {best_score:.1f})")
                 result = self.manager.buy_alt(best_coin, self.config.BRIDGE)
                 if result:
@@ -352,7 +353,7 @@ class Strategy(AutoTrader):
                     
                     # 需要明显更好才切换（避免频繁交易）
                     tmp.append((coin.symbol, sentiment['score']))
-                    if sentiment['score'] > best_score + 15:
+                    if sentiment['score'] > best_score + 10:
                         best_score = sentiment['score']
                         best_coin = coin
                         
