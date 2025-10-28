@@ -359,12 +359,15 @@ class Strategy(AutoTrader):
                     f"(score: {best_score:.1f} vs current: {current_sentiment['score']:.1f})"
                 )
                 # self._jump_to_best_coin(current_coin, current_coin_price)
-                buy_result = self.manager.buy_alt(best_coin, self.config.BRIDGE)
-                if buy_result:
-                    self.db.set_current_coin(best_coin)
-                    self.logger.info(f"Converted to {best_coin.symbol}")
+                for pair in self.db.get_pairs_from(current_coin):
+                    if pair.to_coin.symbol == best_coin.symbol:
+                        self.transaction_through_bridge(pair)
+                        break
                 else:
-                    self.logger.error(f"Failed to convert to {best_coin.symbol}")
+                    self.logger.info(f"No direct pair from {current_coin.symbol} to {best_coin.symbol}, skipping conversion")
+                # buy_result = self.manager.buy_alt(current_coin, best_coin)
+                # if buy_result:
+                self.logger.info(f"Converted to {best_coin.symbol}")
             else:
                 self.logger.debug(f"No better coin found, staying with {current_coin.symbol}")
                 
