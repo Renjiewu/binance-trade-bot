@@ -155,7 +155,7 @@ class BinanceStreamManager:
                         self.logger.debug("Connect for userdata arrived", False)
                         self._fetch_pending_orders()
                         self._invalidate_balances()
-            if stream_data is not False and not stream_data:
+            if stream_data is not False and stream_data:
                 self._process_stream_data(stream_data)
             if stream_data is False and stream_signal is False:
                 time.sleep(0.01)
