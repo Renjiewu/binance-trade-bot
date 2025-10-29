@@ -29,6 +29,7 @@ class MockBinanceManager(BinanceAPIManager):
         self.config = config
         self.datetime = start_date or datetime(2021, 1, 1)
         self.balances = start_balances or {config.BRIDGE.symbol: 100}
+        self.no_btc_value = []
 
     def setup_websockets(self):
         pass  # No websockets are needed for backtesting
@@ -132,7 +133,20 @@ class MockBinanceManager(BinanceAPIManager):
                     continue
                 total += balance / price
             else:
-                price = self.get_ticker_price(coin + target_symbol)
+                if coin not in self.no_btc_value:
+                    try:
+                        price = self.get_ticker_price(coin + target_symbol)
+                    except Exception:
+                        self.no_btc_value.append(coin)
+                        # 用usdt_value除以btc_usdt价格近似代替
+                        btc_usdt_price = self.get_ticker_price(target_symbol + "USDT")
+                        usdt_value = self.get_ticker_price(coin + "USDT")
+                        price = usdt_value / btc_usdt_price if btc_usdt_price else None
+                else:
+                    # 用usdt_value除以btc_usdt价格近似代替
+                    btc_usdt_price = self.get_ticker_price(target_symbol + "USDT")
+                    usdt_value = self.get_ticker_price(coin + "USDT")
+                    price = usdt_value / btc_usdt_price if btc_usdt_price else None
                 if price is None:
                     continue
                 total += price * balance

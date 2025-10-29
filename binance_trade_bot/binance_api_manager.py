@@ -76,6 +76,7 @@ class BinanceAPIManager:
         if origin_coin.symbol == "BNB":
             fee_amount_bnb = fee_amount
         else:
+            # TODO 需要处理一下如果没有origin coin到BNB的价格
             origin_price = self.get_ticker_price(origin_coin + Coin("BNB"))
             if origin_price is None:
                 return base_fee

@@ -22,6 +22,7 @@ class AutoTrader:
         self.db = database
         self.logger = logger
         self.config = config
+        self.no_btc_value = []
 
     def initialize(self):
         self.initialize_trade_thresholds()
@@ -194,7 +195,16 @@ class AutoTrader:
                     continue
                 else:
                     usd_value = self.manager.get_ticker_price(coin + "USDT")
-                    btc_value = self.manager.get_ticker_price(coin + "BTC")
+                    if coin.symbol in self.no_btc_value:
+                        try:
+                            btc_value = self.manager.get_ticker_price(coin + "BTC")
+                        except Exception:
+                            self.no_btc_value.append(coin.symbol)
+                            btc_usdt_price = self.manager.get_ticker_price("BTCUSDT")
+                            btc_value = usd_value / btc_usdt_price if btc_usdt_price else 0
+                    else:
+                        btc_usdt_price = self.manager.get_ticker_price("BTCUSDT")
+                        btc_value = usd_value / btc_usdt_price if btc_usdt_price else 0
                 cv = CoinValue(coin, balance, usd_value, btc_value, datetime=current_time)
                 session.add(cv)
                 self.db.send_update(cv)
