@@ -98,6 +98,7 @@ class BinanceStreamManager:
         self.binance_client = binance_client
         self.pending_orders: Set[Tuple[str, int]] = set()
         self.pending_orders_mutex: threading.Lock = threading.Lock()
+        time.sleep(1)  # wait a bit for streams to be ready
         self._processorThread = threading.Thread(target=self._stream_processor)
         self._processorThread.start()
 
@@ -155,10 +156,10 @@ class BinanceStreamManager:
                         self.logger.debug("Connect for userdata arrived", False)
                         self._fetch_pending_orders()
                         self._invalidate_balances()
-            if stream_data is not False and stream_data:
+            if stream_data:
                 self._process_stream_data(stream_data)
             if not stream_data and stream_signal is False:
-                print("sleeping")
+                # print("sleeping", end="\r")
                 time.sleep(0.01)
 
     def _process_stream_data(self, stream_data):
