@@ -42,6 +42,8 @@ class Strategy(AutoTrader):
             end="\r",
         )
 
+        self.logger.debug(f"Analyzing market trends. Scouting with current coin: {current_coin.symbol}")
+
         # 如果当前是USDT，分析是否应该买入
         if current_coin.symbol == "USDT":
             self._scout_from_usdt(current_time=current_time)
@@ -62,6 +64,11 @@ class Strategy(AutoTrader):
             f"sentiment: {market_sentiment['trend']} "
             f"(score: {market_sentiment['score']:.1f})",
             end="\r"
+        )
+
+        self.logger.debug(
+            f"Market sentiment for {current_coin.symbol}: "
+            f"{market_sentiment['trend']} (score: {market_sentiment['score']:.1f})"
         )
 
         # 根据趋势决策
@@ -310,6 +317,8 @@ class Strategy(AutoTrader):
                 ';'.join([f"{eval['coin'].symbol}: {eval['score']:.1f}" for eval in sorted(evaluations, key=lambda x: x['score'], reverse=True)[:5]]),
                 end="\r",
                 )
+                self.logger.debug("Bullish coin evaluations: " +
+                    '; '.join([f"{eval['coin'].symbol}: {eval['score']:.1f}" for eval in sorted(evaluations, key=lambda x: x['score'], reverse=True)]))
             
             # 只在强烈看涨时买入
             if best_coin and best_score >= self.bullish_threshold + 5:  # 需要更强的信号
@@ -324,6 +333,7 @@ class Strategy(AutoTrader):
                     f"Staying in USDT (best score: {best_score:.1f})",
                     end="\r",
                 )
+                self.logger.debug(f"Staying in USDT (best score: {best_score:.1f})")
                 
         except Exception as e:
             self.logger.error(f"Error in USDT scouting: {e}")
