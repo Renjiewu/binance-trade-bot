@@ -94,3 +94,7 @@ class Config:  # pylint: disable=too-few-public-methods,too-many-instance-attrib
         self.TREND_WINDOW_HOURS = int(os.environ.get("TREND_WINDOW_HOURS") or config.get(USER_CFG_SECTION, "trend_window_hours", fallback="12"))
         self.BULLISH_THRESHOLD = float(os.environ.get("BULLISH_THRESHOLD") or config.get(USER_CFG_SECTION, "bullish_threshold", fallback="60.0"))
         self.BEARISH_THRESHOLD = float(os.environ.get("BEARISH_THRESHOLD") or config.get(USER_CFG_SECTION, "bearish_threshold", fallback="40.0"))
+
+        # WebSocket restart configuration
+        self.WEBSOCKET_RESTART_ENABLED = (os.environ.get("WEBSOCKET_RESTART_ENABLED") or config.get(USER_CFG_SECTION, "websocket_restart_enabled", fallback="yes")).lower() == "yes"
+        self.WEBSOCKET_RESTART_INTERVAL = int(os.environ.get("WEBSOCKET_RESTART_INTERVAL") or config.get(USER_CFG_SECTION, "websocket_restart_interval", fallback="21600"))  # 6 hours default

@@ -75,32 +75,50 @@ class BinanceStreamManager:
     ):
         self.cache = cache
         self.logger = logger
+        self.config = config
+        self.binance_client = binance_client
+        
+        # WebSocket restart configuration
+        self.restart_enabled = config.WEBSOCKET_RESTART_ENABLED
+        self.restart_interval = config.WEBSOCKET_RESTART_INTERVAL
+        self.last_restart_time = time.time()
+        
         exchange_name = f"binance.{config.BINANCE_TLD}"
         if config.TESTNET:
             exchange_name += "-testnet"
-        self.bw_api_manager = BinanceWebSocketApiManager(
-            output_default="UnicornFy",
-            enable_stream_signal_buffer=True,
-            exchange=exchange_name,
-        )
-        self.bw_api_manager.create_stream(
-            ["arr"],
-            ["!miniTicker"],
-            api_key=config.BINANCE_API_KEY,
-            api_secret=config.BINANCE_API_SECRET_KEY,
-        )
-        self.bw_api_manager.create_stream(
-            ["arr"],
-            ["!userData"],
-            api_key=config.BINANCE_API_KEY,
-            api_secret=config.BINANCE_API_SECRET_KEY,
-        )
-        self.binance_client = binance_client
+        self.exchange_name = exchange_name
+        
+        # Initialize WebSocket manager
+        self._init_websocket_manager()
+        
         self.pending_orders: Set[Tuple[str, int]] = set()
         self.pending_orders_mutex: threading.Lock = threading.Lock()
         time.sleep(1)  # wait a bit for streams to be ready
         self._processorThread = threading.Thread(target=self._stream_processor)
         self._processorThread.start()
+        
+        if self.restart_enabled:
+            self.logger.info(f"WebSocket restart enabled: every {self.restart_interval} seconds")
+
+    def _init_websocket_manager(self):
+        """Initialize or reinitialize the WebSocket manager"""
+        self.bw_api_manager = BinanceWebSocketApiManager(
+            output_default="UnicornFy",
+            enable_stream_signal_buffer=True,
+            exchange=self.exchange_name,
+        )
+        self.bw_api_manager.create_stream(
+            ["arr"],
+            ["!miniTicker"],
+            api_key=self.config.BINANCE_API_KEY,
+            api_secret=self.config.BINANCE_API_SECRET_KEY,
+        )
+        self.bw_api_manager.create_stream(
+            ["arr"],
+            ["!userData"],
+            api_key=self.config.BINANCE_API_KEY,
+            api_secret=self.config.BINANCE_API_SECRET_KEY,
+        )
 
     def acquire_order_guard(self):
         return OrderGuard(self.pending_orders, self.pending_orders_mutex)
@@ -139,10 +157,55 @@ class BinanceStreamManager:
         with self.cache.open_balances() as balances:
             balances.clear()
 
+    def _should_restart_websocket(self):
+        """Check if it's time to restart the WebSocket connection"""
+        if not self.restart_enabled:
+            return False
+        
+        current_time = time.time()
+        elapsed = current_time - self.last_restart_time
+        
+        return elapsed >= self.restart_interval
+
+    def _restart_websocket(self):
+        """Restart the WebSocket connection"""
+        try:
+            self.logger.info("Restarting WebSocket connection...")
+            
+            # Stop the current manager
+            old_manager = self.bw_api_manager
+            old_manager.stop_manager_with_all_streams()
+            
+            # Wait a bit for clean shutdown
+            time.sleep(2)
+            
+            # Reinitialize the WebSocket manager
+            self._init_websocket_manager()
+            
+            # Wait for streams to be ready
+            time.sleep(1)
+            
+            # Update restart time
+            self.last_restart_time = time.time()
+            
+            # Invalidate cache to force refresh
+            self._invalidate_balances()
+            
+            self.logger.info("WebSocket connection restarted successfully")
+            
+        except Exception as e:
+            self.logger.error(f"Error during WebSocket restart: {e}")
+            # Reset restart time anyway to avoid continuous restart attempts
+            self.last_restart_time = time.time()
+
     def _stream_processor(self):
         while True:
             if self.bw_api_manager.is_manager_stopping():
                 sys.exit()
+
+            # Check if it's time to restart WebSocket
+            if self._should_restart_websocket():
+                self._restart_websocket()
 
             stream_signal = self.bw_api_manager.pop_stream_signal_from_stream_signal_buffer()
             stream_data = self.bw_api_manager.pop_stream_data_from_stream_buffer()
