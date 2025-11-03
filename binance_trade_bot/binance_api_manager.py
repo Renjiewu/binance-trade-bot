@@ -302,6 +302,10 @@ class BinanceAPIManager:
 
         self.logger.info(f"BUY QTY {order_quantity}")
 
+        if order_quantity <= 0:
+            self.logger.info("Insufficient quantity to buy.")
+            return None
+
         # Try to buy until successful
         order = None
         order_guard = self.stream_manager.acquire_order_guard()
@@ -363,6 +367,10 @@ class BinanceAPIManager:
         order_quantity = self._sell_quantity(origin_symbol, target_symbol, origin_balance)
         order_quantity_s = "{:0.0{}f}".format(order_quantity, pair_info["baseAssetPrecision"])
         self.logger.info(f"Selling {order_quantity} of {origin_symbol}")
+
+        if order_quantity <= 0:
+            self.logger.info("Insufficient quantity to sell.")
+            return None
 
         self.logger.info(f"Balance is {origin_balance}")
         order = None
