@@ -44,6 +44,8 @@ class Strategy(AutoTrader):
 
         self.logger.debug(f"Analyzing market trends. Scouting with current coin: {current_coin.symbol}")
 
+        # self.manager._wait_for_order(order_id="3884710352", origin_symbol="ETH", target_symbol="USDT")
+
         # 如果当前是USDT，分析是否应该买入
         if current_coin.symbol == "USDT":
             self._scout_from_usdt(current_time=current_time)
