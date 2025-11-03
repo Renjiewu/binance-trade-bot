@@ -1,3 +1,4 @@
+import socket
 import sys
 import threading
 import time
@@ -102,23 +103,104 @@ class BinanceStreamManager:
 
     def _init_websocket_manager(self):
         """Initialize or reinitialize the WebSocket manager"""
-        self.bw_api_manager = BinanceWebSocketApiManager(
-            output_default="UnicornFy",
-            enable_stream_signal_buffer=True,
-            exchange=self.exchange_name,
-        )
-        self.bw_api_manager.create_stream(
-            ["arr"],
-            ["!miniTicker"],
-            api_key=self.config.BINANCE_API_KEY,
-            api_secret=self.config.BINANCE_API_SECRET_KEY,
-        )
-        self.bw_api_manager.create_stream(
-            ["arr"],
-            ["!userData"],
-            api_key=self.config.BINANCE_API_KEY,
-            api_secret=self.config.BINANCE_API_SECRET_KEY,
-        )
+        max_retries = 3
+        retry_delay = 2  # seconds
+        
+        for attempt in range(max_retries):
+            try:
+                # Validate DNS resolution first
+                self._validate_exchange_hostname()
+                
+                # Try to initialize with the configured exchange name first
+                self.bw_api_manager = BinanceWebSocketApiManager(
+                    output_default="UnicornFy",
+                    enable_stream_signal_buffer=True,
+                    exchange=self.exchange_name,
+                )
+                self.bw_api_manager.create_stream(
+                    ["arr"],
+                    ["!miniTicker"],
+                    api_key=self.config.BINANCE_API_KEY,
+                    api_secret=self.config.BINANCE_API_SECRET_KEY,
+                )
+                self.bw_api_manager.create_stream(
+                    ["arr"],
+                    ["!userData"],
+                    api_key=self.config.BINANCE_API_KEY,
+                    api_secret=self.config.BINANCE_API_SECRET_KEY,
+                )
+                # Success - exit retry loop
+                if attempt > 0:
+                    self.logger.info(f"WebSocket manager initialized successfully on retry {attempt + 1}")
+                return
+                
+            except OSError as ose:
+                # Commonly occurs when the library tries to resolve an invalid hostname
+                self.logger.error(f"OSError while initializing WebSocket manager (attempt {attempt + 1}/{max_retries}): {ose}")
+                
+                # On last attempt, try fallback exchange without testnet suffix
+                if attempt == max_retries - 1:
+                    fallback_exchange = f"binance.{self.config.BINANCE_TLD}"
+                    if self.exchange_name != fallback_exchange:
+                        self.logger.info(f"Final attempt: retrying with fallback exchange '{fallback_exchange}'")
+                        try:
+                            self.exchange_name = fallback_exchange
+                            self.bw_api_manager = BinanceWebSocketApiManager(
+                                output_default="UnicornFy",
+                                enable_stream_signal_buffer=True,
+                                exchange=self.exchange_name,
+                            )
+                            self.bw_api_manager.create_stream(
+                                ["arr"],
+                                ["!miniTicker"],
+                                api_key=self.config.BINANCE_API_KEY,
+                                api_secret=self.config.BINANCE_API_SECRET_KEY,
+                            )
+                            self.bw_api_manager.create_stream(
+                                ["arr"],
+                                ["!userData"],
+                                api_key=self.config.BINANCE_API_KEY,
+                                api_secret=self.config.BINANCE_API_SECRET_KEY,
+                            )
+                            self.logger.info("WebSocket manager initialized with fallback exchange")
+                            return
+                        except Exception as e:
+                            self.logger.error(f"Failed to initialize WebSocket manager with fallback exchange: {e}")
+                            raise
+                    else:
+                        # Nothing to fallback to; re-raise
+                        raise
+                else:
+                    # Wait before retry (exponential backoff)
+                    wait_time = retry_delay * (2 ** attempt)
+                    self.logger.info(f"Retrying in {wait_time} seconds...")
+                    time.sleep(wait_time)
+                    
+            except Exception as e:  # pylint: disable=broad-except
+                # Log unexpected exceptions during initialization
+                self.logger.error(f"Unexpected error initializing WebSocket manager (attempt {attempt + 1}/{max_retries}): {e}")
+                if attempt == max_retries - 1:
+                    raise
+                else:
+                    wait_time = retry_delay * (2 ** attempt)
+                    self.logger.info(f"Retrying in {wait_time} seconds...")
+                    time.sleep(wait_time)
+    
+    def _validate_exchange_hostname(self):
+        """Validate that the exchange hostname can be resolved"""
+        # Extract potential hostname from exchange name
+        # exchange_name format: "binance.com" or "binance.us" etc.
+        hostname = f"stream.{self.exchange_name.replace('binance.', '')}"
+        
+        try:
+            # Try to resolve the hostname
+            socket.getaddrinfo(hostname, 443, socket.AF_UNSPEC, socket.SOCK_STREAM)
+            self.logger.debug(f"DNS resolution successful for {hostname}")
+        except socket.gaierror as e:
+            self.logger.warning(f"DNS resolution failed for {hostname}: {e}")
+            self.logger.warning("This may cause WebSocket connection issues")
+            # Don't raise - let the WebSocket manager try anyway
+            # in case it uses different hostname resolution
 
     def acquire_order_guard(self):
         return OrderGuard(self.pending_orders, self.pending_orders_mutex)

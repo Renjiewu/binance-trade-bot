@@ -165,29 +165,29 @@ class BinanceAPIManager:
     def _wait_for_order(
         self, order_id, origin_symbol: str, target_symbol: str
     ) -> Optional[BinanceOrder]:  # pylint: disable=unsubscriptable-object
-        for _ in range(60):
+        while True:
             order_status: BinanceOrder = self.cache.orders.get(order_id, None)
             if order_status is not None:
                 break
             self.logger.debug(f"Waiting for order {order_id} to be created")
             time.sleep(1)
-        else:
-            order_status = self.binance_client.get_order(symbol=origin_symbol, orderId=order_id)
-            if order_status:
-                yy = {
-                    "symbol": order_status['symbol'],
-                    "side": order_status['side'],
-                    "order_type": order_status['type'],
-                    "order_id": order_status['orderId'],
-                    "cumulative_quote_asset_transacted_quantity": float(order_status['cummulativeQuoteQty']),
-                    "current_order_status": order_status['status'],
-                    "order_price": order_status['price'],
-                    "transaction_time": order_status['time'],
-                }
-                self.cache.orders[order_id] = BinanceOrder(yy)
-            else:
-                # TODO 处理异常
-                return None
+        # else:
+        #     order_status = self.binance_client.get_order(symbol=origin_symbol, orderId=order_id)
+        #     if order_status:
+        #         yy = {
+        #             "symbol": order_status['symbol'],
+        #             "side": order_status['side'],
+        #             "order_type": order_status['type'],
+        #             "order_id": order_status['orderId'],
+        #             "cumulative_quote_asset_transacted_quantity": float(order_status['cummulativeQuoteQty']),
+        #             "current_order_status": order_status['status'],
+        #             "order_price": order_status['price'],
+        #             "transaction_time": order_status['time'],
+        #         }
+        #         self.cache.orders[order_id] = BinanceOrder(yy)
+        #     else:
+        #         # TODO 处理异常
+        #         return None
 
         self.logger.debug(f"Order created: {order_status}")
 
