@@ -165,11 +165,16 @@ class BinanceAPIManager:
     def _wait_for_order(
         self, order_id, origin_symbol: str, target_symbol: str
     ) -> Optional[BinanceOrder]:  # pylint: disable=unsubscriptable-object
+        times = 0
         while True:
             order_status: BinanceOrder = self.cache.orders.get(order_id, None)
             if order_status is not None:
                 break
+            if times >= 30:
+                self.logger.error(f"Order {order_id} not found after waiting")
+                raise Exception(f"Order {order_id} not found after waiting")
             self.logger.debug(f"Waiting for order {order_id} to be created")
+            times += 1
             time.sleep(1)
         # else:
         #     order_status = self.binance_client.get_order(symbol=origin_symbol, orderId=order_id)
